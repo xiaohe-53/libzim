@@ -159,6 +159,7 @@ namespace zim
 
     void Creator::addItem(std::shared_ptr<Item> item)
     {
+      checkError();
       auto hints = item->getHints();
 
       bool compressContent;
@@ -180,12 +181,14 @@ namespace zim
 
     void Creator::addMetadata(const std::string& name, const std::string& content, const std::string& mimetype)
     {
+      checkError();
       auto provider = std::unique_ptr<ContentProvider>(new StringProvider(content));
       addMetadata(name, std::move(provider), mimetype);
     }
 
     void Creator::addMetadata(const std::string& name, std::unique_ptr<ContentProvider> provider, const std::string& mimetype)
     {
+      checkError();
       auto compressContent = isCompressibleMimetype(mimetype);
       auto dirent = data->createDirent('M', name, mimetype, "");
       data->addItemData(dirent, std::move(provider), compressContent);
@@ -194,6 +197,7 @@ namespace zim
 
     void Creator::addRedirection(const std::string& path, const std::string& title, const std::string& targetPath)
     {
+      checkError();
       auto dirent = data->createRedirectDirent('C', path, title, 'C', targetPath);
       if (data->dirents.size()%1000 == 0){
         TPROGRESS();
@@ -204,6 +208,7 @@ namespace zim
 
     void Creator::finishZimCreation()
     {
+      checkError();
       // Create mandatory entries
       if (!m_faviconPath.empty()) {
         auto dirent = data->createRedirectDirent('-', "favicon", "", 'C', m_faviconPath);
@@ -388,6 +393,18 @@ namespace zim
       unsigned char digest[16];
       zim_MD5Final(digest, &md5ctx);
       _write(out_fd, reinterpret_cast<const char*>(digest), 16);
+    }
+
+    void Creator::checkError()
+    {
+      if (data->m_errored) {
+        throw std::runtime_error("Creator is in error state");
+      }
+	  std::lock_guard<std::mutex> l(data->m_exceptionLock);
+	  if (data->m_exceptionSlot) {
+	    data->m_errored = true;
+	    std::rethrow_exception(data->m_exceptionSlot);
+	  }
     }
 
     CreatorData::CreatorData(const std::string& fname,

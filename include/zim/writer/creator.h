@@ -193,6 +193,7 @@ namespace zim
 
         void fillHeader(Fileheader* header) const;
         void write() const;
+        void checkError();
     };
   }
 

@@ -110,6 +110,9 @@ namespace zim
         TaskQueue taskList;
         ThreadList workerThreads;
         std::thread  writerThread;
+        std::mutex m_exceptionLock;
+        std::exception_ptr m_exceptionSlot;
+        std::atomic<bool> m_errored;
         const CompressionType compression;
         std::string basename;
         bool isEmpty = true;
