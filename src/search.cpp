@@ -81,6 +81,7 @@ setup_queryParser(Xapian::QueryParser* queryparser,
                   Xapian::Database& database,
                   const std::string& language,
                   const std::string& stopwords,
+                  bool suggestion_mode,
                   bool newSuggestionFormat) {
     queryparser->set_default_op(Xapian::Query::op::OP_AND);
     queryparser->set_database(database);
@@ -101,7 +102,7 @@ setup_queryParser(Xapian::QueryParser* queryparser,
         }
     }
 
-    if ( ! stopwords.empty() )
+    if ( ! stopwords.empty() && !suggestion_mode)
     {
         std::string stopWord;
         std::istringstream file(stopwords);
