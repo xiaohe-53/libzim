@@ -115,6 +115,21 @@ setup_queryParser(Xapian::QueryParser* queryparser,
     }
 }
 
+// In suggestion mode, Parse subquery_phrase with OP_PHRASE as default op, set a window size equal to
+// the number of terms in the query. Combine this subquery_phrase with subquery_and and return it.
+Xapian::Query parseQuery(Xapian::QueryParser* queryParser, std::string qs, int flags, std::string prefix, bool suggestion_mode) {
+    Xapian::Query query, subquery_and;
+    query = subquery_and = queryParser->parse_query(qs, flags, prefix);
+
+    if (suggestion_mode) {
+      queryParser->set_default_op(Xapian::Query::op::OP_PHRASE);
+      Xapian::Query subquery_phrase = queryParser->parse_query(qs);
+      subquery_phrase = Xapian::Query(Xapian::Query::OP_PHRASE, subquery_phrase.get_terms_begin(), subquery_phrase.get_terms_end(), subquery_phrase.get_length());
+      query = Xapian::Query(Xapian::Query::OP_OR, subquery_phrase, subquery_and);
+    }
+    return query;
+}
+
 }
 
 Search::Search(const std::vector<Archive>& archives) :
@@ -315,7 +330,7 @@ Search::iterator Search::begin() const {
     if (verbose) {
       std::cout << "Setup queryparser using language " << language << std::endl;
     }
-    setup_queryParser(queryParser, internal->database, language, stopwords, hasNewSuggestionFormat);
+    setup_queryParser(queryParser, internal->database, language, stopwords, suggestion_mode, hasNewSuggestionFormat);
 
     std::string prefix = "";
     unsigned flags = Xapian::QueryParser::FLAG_DEFAULT;
@@ -334,7 +349,7 @@ Search::iterator Search::begin() const {
     }
     Xapian::Query query;
     try {
-      query = queryParser->parse_query(this->query, flags, prefix);
+      query = parseQuery(queryParser, this->query, flags, prefix, suggestion_mode);
     } catch (Xapian::QueryParserError& e) {
       estimated_matches_number = 0;
       return nullptr;

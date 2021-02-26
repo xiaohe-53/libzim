@@ -89,13 +89,12 @@ namespace {
                                         "not berlin"
                                        };
 
-    std::vector<std::string> expectedResult = {};
-
-
     TempZimArchive tza("testZim");
     const zim::Archive archive = tza.createZimFromTitles(titles);
 
     std::vector<std::string> resultSet = getSuggestions(archive, "", archive.getEntryCount());
+    std::vector<std::string> expectedResult = {};
+
     ASSERT_EQ(resultSet, expectedResult);
   }
 
@@ -109,12 +108,12 @@ namespace {
                                         "not berlin"
                                        };
 
-    std::vector<std::string> expectedResult = {};
-
     TempZimArchive tza("testZim");
     const zim::Archive archive = tza.createZimFromTitles(titles);
 
     std::vector<std::string> resultSet = getSuggestions(archive, "none", archive.getEntryCount());
+    std::vector<std::string> expectedResult = {};
+
     ASSERT_EQ(resultSet, expectedResult);
   }
 
@@ -128,6 +127,10 @@ namespace {
                                         "not berlin"
                                        };
 
+    TempZimArchive tza("testZim");
+    const zim::Archive archive = tza.createZimFromTitles(titles);
+
+    std::vector<std::string> resultSet = getSuggestions(archive, "berlin", archive.getEntryCount());
     std::vector<std::string> expectedResult = {
                                         "berlin",
                                         "hotel berlin, berlin",
@@ -136,10 +139,6 @@ namespace {
                                         "not berlin"
                                        };
 
-    TempZimArchive tza("testZim");
-    const zim::Archive archive = tza.createZimFromTitles(titles);
-
-    std::vector<std::string> resultSet = getSuggestions(archive, "berlin", archive.getEntryCount());
     ASSERT_EQ(expectedResult , resultSet);
   }
 
@@ -152,14 +151,41 @@ namespace {
                                         "foobar d"
                                        };
 
-    std::vector<std::string> expectedResult = {
-                                        "foobar a",
-                                        "foobar b"
-                                       };
     TempZimArchive tza("testZim");
     const zim::Archive archive = tza.createZimFromTitles(titles);
 
     std::vector<std::string> resultSet = getSuggestions(archive, "foobar", 2);
+    std::vector<std::string> expectedResult = {
+                                    "foobar a",
+                                    "foobar b"
+                                    };
+
+    ASSERT_EQ(expectedResult, resultSet);
+  }
+
+  TEST(Suggestion, partialQuery) {
+    std::vector<std::string> titles = {
+                                        "The chocolate factory",
+                                        "The wolf of Shingashina",
+                                        "The wolf of Wall Street",
+                                        "Hour of the wolf",
+                                        "Wolf",
+                                        "Terma termb the wolf of wall street termc"
+                                       };
+
+    TempZimArchive tza("testZim");
+    const zim::Archive archive = tza.createZimFromTitles(titles);
+
+    // "wo"
+    std::vector<std::string> resultSet = getSuggestions(archive, "Wo", archive.getEntryCount());
+    std::vector<std::string> expectedResult = {
+                      "Wolf",
+                      "Hour of the wolf",
+                      "The wolf of Shingashina",
+                      "The wolf of Wall Street",
+                      "Terma termb the wolf of wall street termc"
+                    };
+
     ASSERT_EQ(expectedResult, resultSet);
   }
 
@@ -173,18 +199,120 @@ namespace {
                                         "In the winter"
                                        };
 
+    TempZimArchive tza("testZim");
+    const zim::Archive archive = tza.createZimFromTitles(titles);
+
+    std::vector<std::string> resultSet = getSuggestions(archive, "summer in", archive.getEntryCount());
     std::vector<std::string> expectedResult = {
+                                        "Summer in Berlin",
+                                        "Summer in Paradise",
                                         "In Summer",
                                         "In mid Summer",
-                                        "Shivers in summer",
-                                        "Summer in Berlin",
-                                        "Summer in Paradise"
+                                        "Shivers in summer"
+                                       };
+
+    ASSERT_EQ(expectedResult, resultSet);
+  }
+
+    TEST(Suggestion, incrementalSearch) {
+    std::vector<std::string> titles = {
+                                        "The chocolate factory",
+                                        "The wolf of Shingashina",
+                                        "The wolf of Wall Street",
+                                        "The wolf among sheeps",
+                                        "The wolf of Wall Street Book" ,
+                                        "Hour of the wolf",
+                                        "Wolf",
+                                        "Terma termb the wolf of wall street termc"
+                                       };
+
+    std::vector<std::string> resultSet, expectedResult;
+
+    TempZimArchive tza("testZim");
+    const zim::Archive archive = tza.createZimFromTitles(titles);
+
+    // "wolf"
+    resultSet = getSuggestions(archive, "Wolf", archive.getEntryCount());
+    expectedResult = {
+                      "Wolf",
+                      "Hour of the wolf",
+                      "The wolf among sheeps",
+                      "The wolf of Shingashina",
+                      "The wolf of Wall Street",
+                      "The wolf of Wall Street Book",
+                      "Terma termb the wolf of wall street termc"
+                    };
+
+    ASSERT_EQ(expectedResult, resultSet);
+
+    // "the"
+    resultSet = getSuggestions(archive, "the", archive.getEntryCount());
+    expectedResult = {
+                      "The chocolate factory",
+                      "Hour of the wolf",
+                      "The wolf among sheeps",
+                      "The wolf of Shingashina",
+                      "The wolf of Wall Street",
+                      "The wolf of Wall Street Book",
+                      "Terma termb the wolf of wall street termc"
+                    };
+
+    ASSERT_EQ(expectedResult, resultSet);
+
+    // "the wolf"
+    resultSet = getSuggestions(archive, "the wolf", archive.getEntryCount());
+    expectedResult = {
+                      "Hour of the wolf",
+                      "The wolf among sheeps",
+                      "The wolf of Shingashina",
+                      "The wolf of Wall Street",
+                      "The wolf of Wall Street Book",
+                      "Terma termb the wolf of wall street termc"
+                    };
+
+    ASSERT_EQ(expectedResult, resultSet);
+
+    // "the wolf of"
+    resultSet = getSuggestions(archive, "the wolf of", archive.getEntryCount());
+    expectedResult = {
+                      "The wolf of Shingashina",
+                      "The wolf of Wall Street",
+                      "The wolf of Wall Street Book",
+                      "Terma termb the wolf of wall street termc",
+                      "Hour of the wolf"
+                    };
+
+    ASSERT_EQ(expectedResult, resultSet);
+
+    // "the wolf of wall"
+    resultSet = getSuggestions(archive, "the wolf of wall", archive.getEntryCount());
+    expectedResult = {
+                      "The wolf of Wall Street",
+                      "The wolf of Wall Street Book",
+                      "Terma termb the wolf of wall street termc"
+                    };
+
+    ASSERT_EQ(expectedResult, resultSet);
+  }
+
+  TEST(Suggestion, phraseOutOfWindow) {
+    std::vector<std::string> titles = {
+                                        "This query",
+                                        "This is the dummy query phrase",
+                                        "the aterm bterm dummy cterm query",
+                                        "aterm the bterm dummy query cterm"
                                        };
 
     TempZimArchive tza("testZim");
     const zim::Archive archive = tza.createZimFromTitles(titles);
 
-    std::vector<std::string> resultSet = getSuggestions(archive, "summer in", archive.getEntryCount());
+    std::vector<std::string> resultSet = getSuggestions(archive, "the dummy query", archive.getEntryCount());
+    std::vector<std::string> expectedResult = {
+                                        "This is the dummy query phrase",
+                                        "aterm the bterm dummy query cterm",
+                                        "the aterm bterm dummy cterm query"
+                                       };
+
     ASSERT_EQ(expectedResult, resultSet);
   }
 }
