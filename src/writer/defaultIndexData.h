@@ -17,6 +17,9 @@
  *
  */
 
+#ifndef ZIM_WRITER_DEFAULTINDEXDATA_H
+#define ZIM_WRITER_DEFAULTINDEXDATA_H
+
 #include <zim/writer/item.h>
 #include "xapian/myhtmlparse.h"
 #include "tools.h"
@@ -118,3 +121,5 @@ namespace zim
     };
   }
 }
+
+#endif // ZIM_WRITER_DEFAULTINDEXDATA_H
