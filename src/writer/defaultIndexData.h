@@ -54,6 +54,11 @@ namespace zim
             return;
           }
           std::lock_guard<std::mutex> lock(m_initLock);
+          // We have to do a double check to be sure that two call on a un-initialized object
+          // will not be initiialized twice.
+          if (m_initialized) {
+            return;
+          }
 #if defined(ENABLE_XAPIAN)
           try {
             std::ostringstream ss;
